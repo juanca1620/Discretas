@@ -46,8 +46,8 @@ class Game:
         self.title_orig = ResourceManager.load_image("title", "TituloJuego.png")
         self.play_btn_orig = ResourceManager.load_image("play_button", "botonaJugar.png")
         self.play_btn_hover_orig = ResourceManager.load_image("play_button_hover", "BotosJugarMaus.png")
-        self.vol_up_orig = ResourceManager.load_image("vol_up", "VolumenArriba.png")
-        self.vol_mute_orig = ResourceManager.load_image("vol_mute", "Silencio.png")
+        self.vol_on_orig = ResourceManager.load_image("vol_on", "VolumenArriba.png")
+        self.vol_off_orig  = ResourceManager.load_image("vol_off", "Silencio.png")
 
     # --------------------------------------------------
     # AUDIO
@@ -91,28 +91,49 @@ class Game:
         title_w = int(width * 0.6)
         title_h = int(self.title_orig.get_height() * (title_w / self.title_orig.get_width()))
         self.title = pygame.transform.scale(self.title_orig, (title_w, title_h))
-        self.title_pos = (int(width * 0.35), int(height * 0.3))
+        self.title_pos = (int(width * 0.35), int(height * 0.22))
+        title_rect = self.title.get_rect(topleft=self.title_pos)
 
         # PLAY BUTTON
-        btn_w = int(width * 0.2)
+        btn_w = int(width * 0.18)
         btn_h = int(self.play_btn_orig.get_height() * (btn_w / self.play_btn_orig.get_width()))
 
         self.play_btn = pygame.transform.scale(self.play_btn_orig, (btn_w, btn_h))
         self.play_btn_hover = pygame.transform.scale(self.play_btn_hover_orig, (btn_w, btn_h))
-        self.play_btn_pos = (int(width * 0.55), int(height * 0.65))
+        
+        # Espacio más pequeño y estable
+        spacing = int(height * 0.025)
+
+        # Posición normal debajo del título
+        btn_y_normal = title_rect.bottom + spacing
+
+        # Altura aproximada del cuello del perro
+        dog_neck_y = self.dog_rect.top + int(self.dog_rect.height * 0.38)
+
+        # 🔥 Si la pantalla es pequeña, usar punto intermedio
+        if width < 1000:  
+            # Lo acercamos al cuello del perro sin pegarlo
+            btn_y = max(btn_y_normal - int(height * 0.15), dog_neck_y)
+        else:
+            btn_y = btn_y_normal
+
+        btn_x = title_rect.centerx - (btn_w // 2)
+
+        # Límite inferior de seguridad
+        max_y = height - btn_h - int(height * 0.05)
+        btn_y = min(btn_y, max_y)
+
+        self.play_btn_pos = (btn_x, btn_y)
         self.play_btn_rect = self.play_btn.get_rect(topleft=self.play_btn_pos)
 
-        # VOLUME BUTTONS (DOS FIJOS)
+        # VOLUME BUTTON (UNO SOLO)
         vol_size = int(width * 0.10)
 
-        self.vol_up = pygame.transform.scale(self.vol_up_orig, (vol_size, vol_size))
-        self.vol_mute = pygame.transform.scale(self.vol_mute_orig, (vol_size, vol_size))
+        self.vol_on = pygame.transform.scale(self.vol_on_orig, (vol_size, vol_size))
+        self.vol_off = pygame.transform.scale(self.vol_off_orig, (vol_size, vol_size))
 
-        self.vol_up_pos = (int(width * 0.78), int(height * 0.05))
-        self.vol_mute_pos = (int(width * 0.86), int(height * 0.05))
-
-        self.vol_up_rect = self.vol_up.get_rect(topleft=self.vol_up_pos)
-        self.vol_mute_rect = self.vol_mute.get_rect(topleft=self.vol_mute_pos)
+        self.vol_pos = (int(width * 0.85), int(height * 0.05))
+        self.vol_rect = self.vol_on.get_rect(topleft=self.vol_pos)
 
     # --------------------------------------------------
     # MAIN LOOP
@@ -137,12 +158,12 @@ class Game:
                 self.resize_elements(*event.size)
 
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if self.vol_up_rect.collidepoint(event.pos):
-                    self.unmute_music()
-
-                elif self.vol_mute_rect.collidepoint(event.pos):
-                    self.mute_music()
-
+                if self.vol_rect.collidepoint(event.pos):
+                    if self.music_muted:
+                        self.unmute_music()
+                    else:
+                        self.mute_music()
+                        
     # --------------------------------------------------
     # UPDATE
     # --------------------------------------------------
@@ -177,8 +198,8 @@ class Game:
         btn_img = self.play_btn_hover if self.is_hovering else self.play_btn
         self.screen.blit(btn_img, self.play_btn_pos)
 
-        # VOLUME BUTTONS (SIEMPRE VISIBLES)
-        self.screen.blit(self.vol_up, self.vol_up_rect)
-        self.screen.blit(self.vol_mute, self.vol_mute_rect)
+        # VOLUME BUTTON (CAMBIA SEGÚN ESTADO)
+        vol_img = self.vol_off if self.music_muted else self.vol_on
+        self.screen.blit(vol_img, self.vol_rect)
 
         pygame.display.flip()
