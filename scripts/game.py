@@ -88,10 +88,10 @@ class Game:
         )
 
         # TITLE
-        title_w = int(width * 0.4)
+        title_w = int(width * 0.6)
         title_h = int(self.title_orig.get_height() * (title_w / self.title_orig.get_width()))
         self.title = pygame.transform.scale(self.title_orig, (title_w, title_h))
-        self.title_pos = (int(width * 0.55), int(height * 0.3))
+        self.title_pos = (int(width * 0.35), int(height * 0.3))
 
         # PLAY BUTTON
         btn_w = int(width * 0.2)
@@ -99,17 +99,17 @@ class Game:
 
         self.play_btn = pygame.transform.scale(self.play_btn_orig, (btn_w, btn_h))
         self.play_btn_hover = pygame.transform.scale(self.play_btn_hover_orig, (btn_w, btn_h))
-        self.play_btn_pos = (int(width * 0.65), int(height * 0.65))
+        self.play_btn_pos = (int(width * 0.55), int(height * 0.65))
         self.play_btn_rect = self.play_btn.get_rect(topleft=self.play_btn_pos)
 
         # VOLUME BUTTONS (DOS FIJOS)
-        vol_size = int(width * 0.05)
+        vol_size = int(width * 0.10)
 
         self.vol_up = pygame.transform.scale(self.vol_up_orig, (vol_size, vol_size))
         self.vol_mute = pygame.transform.scale(self.vol_mute_orig, (vol_size, vol_size))
 
-        self.vol_up_pos = (int(width * 0.88), int(height * 0.05))
-        self.vol_mute_pos = (int(width * 0.94), int(height * 0.05))
+        self.vol_up_pos = (int(width * 0.78), int(height * 0.05))
+        self.vol_mute_pos = (int(width * 0.86), int(height * 0.05))
 
         self.vol_up_rect = self.vol_up.get_rect(topleft=self.vol_up_pos)
         self.vol_mute_rect = self.vol_mute.get_rect(topleft=self.vol_mute_pos)
