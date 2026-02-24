@@ -197,6 +197,14 @@ class Game:
         # Área donde se dibuja el video
         self.video_draw_rect = pygame.Rect(0, 0, width, height)
 
+        # VIDEO OVERLAY: smaller title (top-right) & volume (top-left)
+        vid_title_w = int(width * 0.55)
+        vid_title_h = int(self.title_orig.get_height() * (vid_title_w / self.title_orig.get_width()))
+        self.title_video = pygame.transform.smoothscale(self.title_orig, (vid_title_w, vid_title_h))
+        self.title_video_pos = (width - vid_title_w + int(width * 0.13), -int(vid_title_h * 0.22))
+        self.vol_pos_video = (int(width * 0.03), int(height * 0.03))
+        self.vol_rect_video = self.vol_on.get_rect(topleft=self.vol_pos_video)
+
     # --------------------------------------------------
     # MAIN LOOP
     # --------------------------------------------------
@@ -306,6 +314,8 @@ class Game:
                 self.state = self.next_state_after_video or "menu"
                 self.fade_alpha = 255
 
+                self.play_background_music()
+
     # --------------------------------------------------
     # DRAW
     # --------------------------------------------------
@@ -372,16 +382,22 @@ class Game:
             if surface is not None:
                 target = pygame.transform.smoothscale(surface, (self.video_draw_rect.width, self.video_draw_rect.height))
                 self.screen.blit(target, self.video_draw_rect)
+                # Title overlay (top-right, smaller)
+                self.screen.blit(self.title_video, self.title_video_pos)
+                # Volume button (top-left)
                 vol_img = self.vol_off if self.music_muted else self.vol_on
-                self.screen.blit(vol_img, self.vol_rect)
+                self.screen.blit(vol_img, self.vol_pos_video)
         elif self.state == "fading_from_video":
             if self.video_last_frame_surface:
                 target = pygame.transform.smoothscale(self.video_last_frame_surface, (self.video_draw_rect.width, self.video_draw_rect.height))
                 self.screen.blit(target, self.video_draw_rect)
+            # Title overlay (top-right, smaller)
+            self.screen.blit(self.title_video, self.title_video_pos)
             self.fade_surface.set_alpha(self.fade_alpha)
             self.screen.blit(self.fade_surface, (0, 0))
+            # Volume button (top-left)
             vol_img = self.vol_off if self.music_muted else self.vol_on
-            self.screen.blit(vol_img, self.vol_rect)
+            self.screen.blit(vol_img, self.vol_pos_video)
 
         pygame.display.flip()
 
@@ -403,5 +419,11 @@ class Game:
             self.video_frame_surface = None
             self.next_state_after_video = return_state
             self.state = "playing_video"
+            # Switch to rain sound during video
+            base_path2 = os.path.dirname(os.path.abspath(__file__))
+            rain_path = os.path.join(base_path2, "..", "assets", "sounds", "Rain Sound.mp3")
+            pygame.mixer.music.load(rain_path)
+            pygame.mixer.music.set_volume(self.music_volume if not self.music_muted else 0)
+            pygame.mixer.music.play(-1)
         except Exception as e:
             print(f"No se pudo cargar el video {filename}: {e}")
