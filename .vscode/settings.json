@@ -1,4 +1,18 @@
 {
     "python.analysis.autoImportCompletions": true,
-    "python.analysis.typeCheckingMode": "basic"
+    "python.analysis.typeCheckingMode": "basic",
+    "cursorpyright.analysis.autoImportCompletions": true,
+    "cursorpyright.analysis.typeCheckingMode": "basic",
+    "python.analysis.extraPaths": [
+        "/Users/lauravaleriavalenciagonzalez/Library/Python/3.9/lib/python/site-packages"
+    ],
+    "cursorpyright.analysis.extraPaths": [
+        "/Users/lauravaleriavalenciagonzalez/Library/Python/3.9/lib/python/site-packages"
+    ],
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingImports": "none"
+    },
+    "cursorpyright.analysis.diagnosticSeverityOverrides": {
+        "reportMissingImports": "none"
+    }
 }

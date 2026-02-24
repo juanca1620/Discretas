@@ -7,6 +7,7 @@ TITULO = "Choise paw"
 # Colores (R, G, B)
 COLOR_FONDO = (30, 30, 30)
 COLOR_PLAYER = (0, 255, 100)
+COLOR_LOADING = (90, 200, 120)
 
 # Propiedades del Jugador
 PLAYER_VEL = 5
