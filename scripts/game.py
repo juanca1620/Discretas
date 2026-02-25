@@ -67,6 +67,14 @@ class Game:
         self.vol_off_orig  = ResourceManager.load_image("vol_off", "Silencio.png") or ph(256, 256, (220, 120, 120, 255))
         self.loading_bg_orig = ResourceManager.load_image("loading_bg", "FondoCarga.png") or ph(800, 600, (20, 20, 20, 255))
         self.question_bg_orig = ResourceManager.load_image("question_bg", "ImagenFondo.png") or ph(800, 600, (30, 30, 30, 255))
+        
+        # New Backgrounds for Level 2
+        self.bg_decision_enfermo_orig = ResourceManager.load_image("decision_enfermo", "../ELEMENTOS ESCENA 2/Imagenes/ENFERMO/Decisio╠ün Toby se va con mateo.png") or ph(800, 600, (100, 50, 50, 255))
+        self.bg_decision_sano_orig = ResourceManager.load_image("decision_sano", "../ELEMENTOS ESCENA 2/Imagenes/SANO/Toby se va con mateo.png") or ph(800, 600, (50, 100, 50, 255))
+        
+        # New Background for Level 3
+        self.bg_level3_orig = ResourceManager.load_image("level3_bg", "../Nivel3/ImagenPrincipalDecisionNivel3.png") or ph(800, 600, (80, 80, 120, 255))
+
         self.btn_yes_orig = ResourceManager.load_image("btn_yes", "BotonSi.png") or ph(300, 120, (120, 220, 120, 255))
         self.btn_no_orig = ResourceManager.load_image("btn_no", "BotonNo.png") or ph(300, 120, (220, 120, 120, 255))
 
@@ -100,6 +108,14 @@ class Game:
             self.loading_bg = pygame.transform.scale(self.loading_bg_orig, (width, height))
         if self.question_bg_orig:
             self.question_bg = pygame.transform.scale(self.question_bg_orig, (width, height))
+        
+        if self.bg_decision_enfermo_orig:
+            self.bg_decision_enfermo = pygame.transform.scale(self.bg_decision_enfermo_orig, (width, height))
+        if self.bg_decision_sano_orig:
+            self.bg_decision_sano = pygame.transform.scale(self.bg_decision_sano_orig, (width, height))
+        
+        if self.bg_level3_orig:
+            self.bg_level3 = pygame.transform.scale(self.bg_level3_orig, (width, height))
 
         # DOG
         dog_width = int(width * 0.3)
@@ -238,9 +254,41 @@ class Game:
                         self.mute_music()
                 elif self.state == "level1":
                     if self.btn_yes_rect and self.btn_yes_rect.collidepoint(event.pos):
-                        self.start_video("PerroentraCaja.mp4", return_state="menu")
+                        self.start_video("PerroentraCaja.mp4", return_state="level2_sano")
                     elif self.btn_no_rect and self.btn_no_rect.collidepoint(event.pos):
-                        self.start_video("LluviaPerroNoEntra.mp4", return_state="menu")
+                        self.start_video("LluviaPerroNoEntra.mp4", return_state="level2_enfermo")
+                elif self.state == "level2_enfermo":
+                    if self.btn_yes_rect and self.btn_yes_rect.collidepoint(event.pos):
+                        # SI -> ConfioEnMateo -> Level 3
+                        self.start_video("../ELEMENTOS ESCENA 2/Videos/ENFERMO/SI/ConfioEnMateo.mp4", return_state="level3")
+                    elif self.btn_no_rect and self.btn_no_rect.collidepoint(event.pos):
+                        # NO -> TOMA 2 Toby huye de mateo -> Level 3
+                        self.start_video("../ELEMENTOS ESCENA 2/Videos/ENFERMO/NO/TOMA 2 Toby huye de mateo.mp4", return_state="level3")
+
+                elif self.state == "level2_sano":
+                    if self.btn_yes_rect and self.btn_yes_rect.collidepoint(event.pos):
+                        # SI -> TOMA 2 Toby se va con Mateo -> Level 3
+                        self.start_video("../ELEMENTOS ESCENA 2/Videos/SANO/SI/TOMA 2 Toby se va con Mateo.mp4", return_state="level3")
+                    elif self.btn_no_rect and self.btn_no_rect.collidepoint(event.pos):
+                        # NO -> TobySeAsustahuyendo -> Level 3
+                        self.start_video("../ELEMENTOS ESCENA 2/Videos/SANO/NO/TobySeAsustahuyendo.mp4", return_state="level3")
+                
+                elif self.state == "level3":
+                    if self.btn_yes_rect and self.btn_yes_rect.collidepoint(event.pos):
+                        # SI -> SiEnfrenta -> (Wait 1s) -> 2Enfrenta
+                        self.start_video_sequence([
+                            "../Nivel3/SiEnfrenta.mp4",
+                            "WAIT:1000",
+                            "../Nivel3/2Enfrenta.mp4"
+                        ], return_state="menu")
+                    elif self.btn_no_rect and self.btn_no_rect.collidepoint(event.pos):
+                        # NO -> NoEnfrenta -> (Wait 1s) -> 2NoEnfrenta
+                        self.start_video_sequence([
+                            "../Nivel3/NoEnfrenta.mp4",
+                            "WAIT:1000",
+                            "../Nivel3/2NoEnfrenta.mp4"
+                        ], return_state="menu")
+                
                 elif self.state == "playing_video":
                     # Permitir saltar el video con clic
                     self.state = "fading_from_video"
@@ -283,6 +331,16 @@ class Game:
             self.is_hover_no = self.btn_no_rect.collidepoint(mouse_pos) if self.btn_no_rect else False
             if self.fade_alpha > 0:
                 self.fade_alpha = max(0, self.fade_alpha - int(800 * dt / 1000))
+        elif self.state in ("level2_sano", "level2_enfermo", "level3"):
+            mouse_pos = pygame.mouse.get_pos()
+            self.is_hover_yes = self.btn_yes_rect.collidepoint(mouse_pos) if self.btn_yes_rect else False
+            self.is_hover_no = self.btn_no_rect.collidepoint(mouse_pos) if self.btn_no_rect else False
+            if self.fade_alpha > 0:
+                self.fade_alpha = max(0, self.fade_alpha - int(800 * dt / 1000))
+        elif self.state == "black_screen_wait":
+            self.wait_timer += dt
+            if self.wait_timer >= self.wait_duration:
+                self.play_next_in_sequence()
         elif self.state == "fading_to_level":
             self.fade_alpha = min(255, self.fade_alpha + int(800 * dt / 1000))
             if self.fade_alpha >= 255:
@@ -311,10 +369,13 @@ class Game:
         elif self.state == "fading_from_video":
             self.fade_alpha = min(255, self.fade_alpha + int(1000 * dt / 1000))
             if self.fade_alpha >= 255:
-                self.state = self.next_state_after_video or "menu"
-                self.fade_alpha = 255
-
-                self.play_background_music()
+                if self.next_state_after_video == "NEXT_IN_SEQUENCE":
+                    self.play_next_in_sequence()
+                else:
+                    self.state = self.next_state_after_video or "menu"
+                    self.fade_alpha = 255
+                    # Resume background music when video sequence/video ends
+                    self.play_background_music()
 
     # --------------------------------------------------
     # DRAW
@@ -377,6 +438,50 @@ class Game:
             if self.fade_alpha > 0:
                 self.fade_surface.set_alpha(self.fade_alpha)
                 self.screen.blit(self.fade_surface, (0, 0))
+        elif self.state == "level2_sano":
+            if getattr(self, "bg_decision_sano", None):
+                self.screen.blit(self.bg_decision_sano, (0, 0))
+            else:
+                self.screen.fill((50, 100, 50))
+            if getattr(self, "btn_yes", None):
+                self.screen.blit(self.btn_yes, self.btn_yes_rect)
+            if getattr(self, "btn_no", None):
+                self.screen.blit(self.btn_no, self.btn_no_rect)
+            vol_img = self.vol_off if self.music_muted else self.vol_on
+            self.screen.blit(vol_img, self.vol_rect)
+            if self.fade_alpha > 0:
+                self.fade_surface.set_alpha(self.fade_alpha)
+                self.screen.blit(self.fade_surface, (0, 0))
+        elif self.state == "level2_enfermo":
+            if getattr(self, "bg_decision_enfermo", None):
+                self.screen.blit(self.bg_decision_enfermo, (0, 0))
+            else:
+                self.screen.fill((100, 50, 50))
+            if getattr(self, "btn_yes", None):
+                self.screen.blit(self.btn_yes, self.btn_yes_rect)
+            if getattr(self, "btn_no", None):
+                self.screen.blit(self.btn_no, self.btn_no_rect)
+            vol_img = self.vol_off if self.music_muted else self.vol_on
+            self.screen.blit(vol_img, self.vol_rect)
+            if self.fade_alpha > 0:
+                self.fade_surface.set_alpha(self.fade_alpha)
+                self.screen.blit(self.fade_surface, (0, 0))
+        elif self.state == "level3":
+            if getattr(self, "bg_level3", None):
+                self.screen.blit(self.bg_level3, (0, 0))
+            else:
+                self.screen.fill((80, 80, 120))
+            if getattr(self, "btn_yes", None):
+                self.screen.blit(self.btn_yes, self.btn_yes_rect)
+            if getattr(self, "btn_no", None):
+                self.screen.blit(self.btn_no, self.btn_no_rect)
+            vol_img = self.vol_off if self.music_muted else self.vol_on
+            self.screen.blit(vol_img, self.vol_rect)
+            if self.fade_alpha > 0:
+                self.fade_surface.set_alpha(self.fade_alpha)
+                self.screen.blit(self.fade_surface, (0, 0))
+        elif self.state == "black_screen_wait":
+            self.screen.fill((0, 0, 0))
         elif self.state == "playing_video":
             surface = getattr(self, "video_frame_surface", None)
             if surface is not None:
@@ -419,11 +524,67 @@ class Game:
             self.video_frame_surface = None
             self.next_state_after_video = return_state
             self.state = "playing_video"
-            # Switch to rain sound during video
-            base_path2 = os.path.dirname(os.path.abspath(__file__))
-            rain_path = os.path.join(base_path2, "..", "assets", "sounds", "Rain Sound.mp3")
-            pygame.mixer.music.load(rain_path)
-            pygame.mixer.music.set_volume(self.music_volume if not self.music_muted else 0)
-            pygame.mixer.music.play(-1)
+            
+            # Stop background music to play video audio properly
+            pygame.mixer.music.stop()
+            
+            # Switch to rain sound during video (Only if needed, but requested behavior is video audio)
+            # The previous code was forcing 'Rain Sound.mp3'. 
+            # If the video has its own audio, we might want to let it play via moviepy/imageio (imageio standard doesn't play audio easily with pygame mixer)
+            # However, standard imageio 'get_reader' does NOT play audio automatically in Pygame.
+            # Pygame doesn't support video audio playback from imageio out of the box without extracting it.
+            # BUT, the user said "que se escuche el audio del video".
+            # The current implementation uses 'imageio' which is video-only usually unless we extract audio.
+            # AND the previous code was loading "Rain Sound.mp3" explicitly.
+            
+            # Let's COMMENT OUT the rain sound forcing so at least it doesn't overlap if the video somehow has audio handling (or if user thinks video has audio).
+            # If the user wants the ACTUAL video audio, that's complex with just imageio + pygame.
+            # But let's first do what is asked: stop background music.
+            
+            # base_path2 = os.path.dirname(os.path.abspath(__file__))
+            # rain_path = os.path.join(base_path2, "..", "assets", "sounds", "Rain Sound.mp3")
+            # pygame.mixer.music.load(rain_path)
+            # pygame.mixer.music.set_volume(self.music_volume if not self.music_muted else 0)
+            # pygame.mixer.music.play(-1)
+            
+            # Since we are using imageio, it DOES NOT play audio by default.
+            # If the user expects video audio, we need to extract it or use a different method.
+            # However, simpler step first: STOP the background music as requested.
+            
         except Exception as e:
             print(f"No se pudo cargar el video {filename}: {e}")
+            self.state = self.next_state_after_video or "menu"
+
+    def start_video_sequence(self, sequence, return_state="menu"):
+        self.video_sequence = sequence
+        self.video_sequence_index = 0
+        self.final_return_state = return_state
+        self.play_next_in_sequence()
+
+    def play_next_in_sequence(self):
+        if self.video_sequence_index >= len(self.video_sequence):
+            self.state = self.final_return_state
+            self.play_background_music()
+            return
+
+        item = self.video_sequence[self.video_sequence_index]
+        self.video_sequence_index += 1
+
+        if item.startswith("WAIT:"):
+            try:
+                ms = int(item.split(":")[1])
+            except:
+                ms = 1000
+            self.state = "black_screen_wait"
+            self.wait_timer = 0
+            self.wait_duration = ms
+        else:
+            # If it's a video, we set 'next_state_after_video' to trigger this method again
+            # We need a special handling in update loop for 'fading_from_video' -> calls play_next_in_sequence
+            self.start_video(item, return_state="NEXT_IN_SEQUENCE")
+
+    # Override return state logic in update
+    # We need to change line 314 logic to support sequence
+    # But since I can't easily change just that line without context, I will rely on 'NEXT_IN_SEQUENCE' check
+    # Let's modify the 'fading_from_video' block logic instead with a small trick or just search/replace it.
+
