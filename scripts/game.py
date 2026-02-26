@@ -77,6 +77,12 @@ class Game:
 
         self.btn_yes_orig = ResourceManager.load_image("btn_yes", "BotonSi.png") or ph(300, 120, (120, 220, 120, 255))
         self.btn_no_orig = ResourceManager.load_image("btn_no", "BotonNo.png") or ph(300, 120, (220, 120, 120, 255))
+        self.bg_level4_orig = ResourceManager.load_image("level4_bg", "../Nivel4/ImagenFondoPregunta.png") or ph(800, 600, (60, 80, 100, 255))
+        self.btn_yes_lvl4_orig = ResourceManager.load_image("btn_yes_lvl4", "../Nivel4/BotonSi.png") or self.btn_yes_orig
+        self.btn_no_lvl4_orig = ResourceManager.load_image("btn_no_lvl4", "../Nivel4/BotonNo.png") or self.btn_no_orig
+        self.bg_level5_intro_orig = ResourceManager.load_image("level5_intro_bg", "../ELEMENTOS ESCENA 5/INTRO/Toby frente al abuelo en la sala.png") or ph(800, 600, (90, 90, 110, 255))
+        self.btn_sentarse_orig = ResourceManager.load_image("btn_sentarse", "../ELEMENTOS ESCENA 5/INTRO/Botón Sentarse con él.png") or ph(300, 120, (120, 180, 240, 255))
+        self.btn_traer_orig = ResourceManager.load_image("btn_traer", "../ELEMENTOS ESCENA 5/INTRO/Boton Traer la Pelota.png") or ph(300, 120, (240, 180, 120, 255))
 
     # --------------------------------------------------
     # AUDIO
@@ -116,6 +122,10 @@ class Game:
         
         if self.bg_level3_orig:
             self.bg_level3 = pygame.transform.scale(self.bg_level3_orig, (width, height))
+        if self.bg_level4_orig:
+            self.bg_level4 = pygame.transform.scale(self.bg_level4_orig, (width, height))
+        if self.bg_level5_intro_orig:
+            self.bg_level5_intro = pygame.transform.scale(self.bg_level5_intro_orig, (width, height))
 
         # DOG
         dog_width = int(width * 0.3)
@@ -128,52 +138,37 @@ class Game:
             center=(int(width * 0.25), int(height * 0.65))
         )
 
-        # TITLE
-        title_w = int(width * 0.78)
-        title_h = int(self.title_orig.get_height() * (title_w / self.title_orig.get_width()))
-        self.title = pygame.transform.scale(self.title_orig, (title_w, title_h))
-        if width >= 1400:
-            title_y = int(height * 0.12)
-            title_x = int(width * 0.28)
-        elif width >= 1000:
-            title_y = int(height * 0.15)
-            title_x = int(width * 0.29)
+        title_w_by_width = int(width * 0.56)
+        title_h_by_width = int(self.title_orig.get_height() * (title_w_by_width / self.title_orig.get_width()))
+        title_h_cap = int(height * 0.4)
+        if title_h_by_width > title_h_cap:
+            title_h = title_h_cap
+            title_w = int(self.title_orig.get_width() * (title_h / self.title_orig.get_height()))
         else:
-            title_y = int(height * 0.21)
-            title_x = int(width * 0.30)
-        self.title_pos = (title_x, title_y)
-        title_rect = self.title.get_rect(topleft=self.title_pos)
+            title_w = title_w_by_width
+            title_h = title_h_by_width
+        self.title = pygame.transform.scale(self.title_orig, (title_w, title_h))
+        title_rect = self.title.get_rect(center=(int(width * 0.62), int(height * 0.46)))
+        self.title_pos = title_rect.topleft
 
-        # PLAY BUTTON
-        btn_w = int(width * 0.26)
+        btn_w = max(int(width * 0.18), int(title_w * 0.34))
+        btn_w = min(btn_w, int(width * 0.42))
         btn_h = int(self.play_btn_orig.get_height() * (btn_w / self.play_btn_orig.get_width()))
-
         self.play_btn = pygame.transform.scale(self.play_btn_orig, (btn_w, btn_h))
         self.play_btn_hover = pygame.transform.scale(self.play_btn_hover_orig, (btn_w, btn_h))
         
-        # Espacio más pequeño y estable
-        spacing = int(height * 0.025)
-
-        # Posición normal debajo del título
-        btn_y_normal = title_rect.bottom + spacing
-
-        # Altura aproximada del cuello del perro
-        dog_neck_y = self.dog_rect.top + int(self.dog_rect.height * 0.38)
-
-        # 🔥 Si la pantalla es pequeña, usar punto intermedio
-        if width < 1000:  
-            # Lo acercamos al cuello del perro sin pegarlo
-            btn_y = max(btn_y_normal - int(height * 0.15), dog_neck_y)
-        else:
-            btn_y = btn_y_normal
-
-        btn_x = title_rect.centerx - (btn_w // 2)
-
-        # Límite inferior de seguridad
-        max_y = height - btn_h - int(height * 0.05)
-        btn_y = min(btn_y, max_y)
-
-        self.play_btn_pos = (btn_x, btn_y)
+        spacing = int(height * 0.03)
+        btn_centerx = title_rect.centerx
+        btn_centery = title_rect.bottom + spacing + btn_h // 2
+        # Subir ligeramente el botón (≈5 px)
+        btn_centery -= 5
+        
+        # Asegurar que no quede por debajo del cuello del perro
+        dog_neck_y = self.dog_rect.top + int(self.dog_rect.height * 0.55)
+        btn_centery = min(btn_centery, dog_neck_y)
+        max_y = height - btn_h - int(height * 0.06)
+        btn_centery = min(btn_centery, max_y + btn_h // 2)
+        self.play_btn_pos = (btn_centerx - btn_w // 2, btn_centery - btn_h // 2)
         self.play_btn_rect = self.play_btn.get_rect(topleft=self.play_btn_pos)
 
         # VOLUME BUTTON (UNO SOLO)
@@ -210,6 +205,26 @@ class Game:
             y = int(height * 0.80)
             self.btn_yes_rect = self.btn_yes.get_rect(center=(int(width * 0.36), y))
             self.btn_no_rect = self.btn_no.get_rect(center=(int(width * 0.64), y))
+        # Botones Sí/No específicos para Nivel 4
+        if self.btn_yes_lvl4_orig and self.btn_no_lvl4_orig:
+            btn_w = int(width * 0.30)
+            btn_h_yes4 = int(self.btn_yes_lvl4_orig.get_height() * (btn_w / self.btn_yes_lvl4_orig.get_width()))
+            btn_h_no4 = int(self.btn_no_lvl4_orig.get_height() * (btn_w / self.btn_no_lvl4_orig.get_width()))
+            self.btn_yes_lvl4 = pygame.transform.smoothscale(self.btn_yes_lvl4_orig, (btn_w, btn_h_yes4))
+            self.btn_no_lvl4 = pygame.transform.smoothscale(self.btn_no_lvl4_orig, (btn_w, btn_h_no4))
+            y4 = int(height * 0.80)
+            self.btn_yes_lvl4_rect = self.btn_yes_lvl4.get_rect(center=(int(width * 0.36), y4))
+            self.btn_no_lvl4_rect = self.btn_no_lvl4.get_rect(center=(int(width * 0.64), y4))
+        # Botones de Escena 5 Intro (Sentarse / Traer la pelota)
+        if self.btn_sentarse_orig and self.btn_traer_orig:
+            btn_w5 = int(width * 0.28)
+            btn_h_sent = int(self.btn_sentarse_orig.get_height() * (btn_w5 / self.btn_sentarse_orig.get_width()))
+            btn_h_traer = int(self.btn_traer_orig.get_height() * (btn_w5 / self.btn_traer_orig.get_width()))
+            self.btn_sentarse = pygame.transform.smoothscale(self.btn_sentarse_orig, (btn_w5, btn_h_sent))
+            self.btn_traer = pygame.transform.smoothscale(self.btn_traer_orig, (btn_w5, btn_h_traer))
+            y5 = int(height * 0.84)
+            self.btn_sentarse_rect = self.btn_sentarse.get_rect(center=(int(width * 0.30), y5))
+            self.btn_traer_rect = self.btn_traer.get_rect(center=(int(width * 0.70), y5))
         # Área donde se dibuja el video
         self.video_draw_rect = pygame.Rect(0, 0, width, height)
 
@@ -280,14 +295,30 @@ class Game:
                             "../Nivel3/SiEnfrenta.mp4",
                             "WAIT:1000",
                             "../Nivel3/2Enfrenta.mp4"
-                        ], return_state="menu")
+                        ], return_state="level4")
                     elif self.btn_no_rect and self.btn_no_rect.collidepoint(event.pos):
                         # NO -> NoEnfrenta -> (Wait 1s) -> 2NoEnfrenta
                         self.start_video_sequence([
                             "../Nivel3/NoEnfrenta.mp4",
                             "WAIT:1000",
                             "../Nivel3/2NoEnfrenta.mp4"
+                        ], return_state="level4")
+                
+                elif self.state == "level4":
+                    if getattr(self, "btn_no_lvl4_rect", None) and self.btn_no_lvl4_rect.collidepoint(event.pos):
+                        self.start_video("../Nivel4/VideoDeNo.mp4", return_state="level5_intro")
+                    elif getattr(self, "btn_yes_lvl4_rect", None) and self.btn_yes_lvl4_rect.collidepoint(event.pos):
+                        self.start_video("../Nivel4/VideoDeSi.mp4", return_state="level5_intro")
+                
+                elif self.state == "level5_intro":
+                    if getattr(self, "btn_sentarse_rect", None) and self.btn_sentarse_rect.collidepoint(event.pos):
+                        self.start_video_sequence([
+                            "../ELEMENTOS ESCENA 5/VIDEOS/Toby se sienta junto al abuelo y él lo acaricia..mp4",
+                            "WAIT:800",
+                            "../ELEMENTOS ESCENA 5/VIDEOS/(máxima aceptación)..mp4"
                         ], return_state="menu")
+                    elif getattr(self, "btn_traer_rect", None) and self.btn_traer_rect.collidepoint(event.pos):
+                        self.start_video("../ELEMENTOS ESCENA 5/VIDEOS/Toby trae la pelota y el abuelo sonríe..mp4", return_state="menu")
                 
                 elif self.state == "playing_video":
                     # Permitir saltar el video con clic
@@ -335,6 +366,18 @@ class Game:
             mouse_pos = pygame.mouse.get_pos()
             self.is_hover_yes = self.btn_yes_rect.collidepoint(mouse_pos) if self.btn_yes_rect else False
             self.is_hover_no = self.btn_no_rect.collidepoint(mouse_pos) if self.btn_no_rect else False
+            if self.fade_alpha > 0:
+                self.fade_alpha = max(0, self.fade_alpha - int(800 * dt / 1000))
+        elif self.state == "level4":
+            mouse_pos = pygame.mouse.get_pos()
+            self.is_hover_yes = self.btn_yes_lvl4_rect.collidepoint(mouse_pos) if getattr(self, "btn_yes_lvl4_rect", None) else False
+            self.is_hover_no = self.btn_no_lvl4_rect.collidepoint(mouse_pos) if getattr(self, "btn_no_lvl4_rect", None) else False
+            if self.fade_alpha > 0:
+                self.fade_alpha = max(0, self.fade_alpha - int(800 * dt / 1000))
+        elif self.state == "level5_intro":
+            mouse_pos = pygame.mouse.get_pos()
+            self.is_hover_yes = self.btn_sentarse_rect.collidepoint(mouse_pos) if getattr(self, "btn_sentarse_rect", None) else False
+            self.is_hover_no = self.btn_traer_rect.collidepoint(mouse_pos) if getattr(self, "btn_traer_rect", None) else False
             if self.fade_alpha > 0:
                 self.fade_alpha = max(0, self.fade_alpha - int(800 * dt / 1000))
         elif self.state == "black_screen_wait":
@@ -438,6 +481,34 @@ class Game:
             if self.fade_alpha > 0:
                 self.fade_surface.set_alpha(self.fade_alpha)
                 self.screen.blit(self.fade_surface, (0, 0))
+        elif self.state == "level4":
+            if getattr(self, "bg_level4", None):
+                self.screen.blit(self.bg_level4, (0, 0))
+            else:
+                self.screen.fill((60, 80, 100))
+            if getattr(self, "btn_yes_lvl4", None):
+                self.screen.blit(self.btn_yes_lvl4, self.btn_yes_lvl4_rect)
+            if getattr(self, "btn_no_lvl4", None):
+                self.screen.blit(self.btn_no_lvl4, self.btn_no_lvl4_rect)
+            vol_img = self.vol_off if self.music_muted else self.vol_on
+            self.screen.blit(vol_img, self.vol_rect)
+            if self.fade_alpha > 0:
+                self.fade_surface.set_alpha(self.fade_alpha)
+                self.screen.blit(self.fade_surface, (0, 0))
+        elif self.state == "level5_intro":
+            if getattr(self, "bg_level5_intro", None):
+                self.screen.blit(self.bg_level5_intro, (0, 0))
+            else:
+                self.screen.fill((90, 90, 110))
+            if getattr(self, "btn_sentarse", None):
+                self.screen.blit(self.btn_sentarse, self.btn_sentarse_rect)
+            if getattr(self, "btn_traer", None):
+                self.screen.blit(self.btn_traer, self.btn_traer_rect)
+            vol_img = self.vol_off if self.music_muted else self.vol_on
+            self.screen.blit(vol_img, self.vol_rect)
+            if self.fade_alpha > 0:
+                self.fade_surface.set_alpha(self.fade_alpha)
+                self.screen.blit(self.fade_surface, (0, 0))
         elif self.state == "level2_sano":
             if getattr(self, "bg_decision_sano", None):
                 self.screen.blit(self.bg_decision_sano, (0, 0))
@@ -525,8 +596,16 @@ class Game:
             self.next_state_after_video = return_state
             self.state = "playing_video"
             
-            # Stop background music to play video audio properly
+            # Stop background music to play video audio properly (if available)
             pygame.mixer.music.stop()
+            try:
+                mp3_path = os.path.splitext(video_path)[0] + ".mp3"
+                if os.path.exists(mp3_path):
+                    pygame.mixer.music.load(mp3_path)
+                    pygame.mixer.music.set_volume(self.music_volume if not self.music_muted else 0)
+                    pygame.mixer.music.play()
+            except Exception:
+                pass
             
             # Switch to rain sound during video (Only if needed, but requested behavior is video audio)
             # The previous code was forcing 'Rain Sound.mp3'. 
