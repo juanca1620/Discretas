@@ -4,6 +4,7 @@ import constantes
 import os
 from scripts.utils.resource_manager import ResourceManager
 from scripts.entities.player import Player
+from scripts.game_state import GameState
 try:
     import imageio.v2 as imageio
 except Exception:
@@ -28,6 +29,7 @@ class Game:
         self.state = "menu"
         self.fade_alpha = 0
         self.player = Player()
+        self.game_state = GameState()
         self.is_hover_yes = False
         self.is_hover_no = False
 
@@ -83,6 +85,9 @@ class Game:
         self.bg_level5_intro_orig = ResourceManager.load_image("level5_intro_bg", "../ELEMENTOS ESCENA 5/INTRO/Toby frente al abuelo en la sala.png") or ph(800, 600, (90, 90, 110, 255))
         self.btn_sentarse_orig = ResourceManager.load_image("btn_sentarse", "../ELEMENTOS ESCENA 5/INTRO/Botón Sentarse con él.png") or ph(300, 120, (120, 180, 240, 255))
         self.btn_traer_orig = ResourceManager.load_image("btn_traer", "../ELEMENTOS ESCENA 5/INTRO/Boton Traer la Pelota.png") or ph(300, 120, (240, 180, 120, 255))
+        
+        self.img_derecha_orig = ResourceManager.load_image("img_derecha", "ImagenDerecha.png") or ph(400, 600, (100, 100, 100, 255))
+        self.btn_volver_orig = ResourceManager.load_image("volver_jugar", "volverJugar.png") or ph(300, 100, (100, 200, 100, 255))
 
     # --------------------------------------------------
     # AUDIO
@@ -225,6 +230,22 @@ class Game:
             y5 = int(height * 0.84)
             self.btn_sentarse_rect = self.btn_sentarse.get_rect(center=(int(width * 0.30), y5))
             self.btn_traer_rect = self.btn_traer.get_rect(center=(int(width * 0.70), y5))
+            
+        if getattr(self, "img_derecha_orig", None):
+            img_h = height
+            img_w = int(self.img_derecha_orig.get_width() * (img_h / max(1, self.img_derecha_orig.get_height())))
+            self.img_derecha = pygame.transform.smoothscale(self.img_derecha_orig, (img_w, img_h))
+            self.img_derecha_rect = self.img_derecha.get_rect(topleft=(0, 0))
+            
+        if getattr(self, "btn_volver_orig", None):
+            btn_w = int(width * 0.25)
+            btn_h = int(self.btn_volver_orig.get_height() * (btn_w / max(1, self.btn_volver_orig.get_width())))
+            self.btn_volver = pygame.transform.smoothscale(self.btn_volver_orig, (btn_w, btn_h))
+            btn_x = int(width * 0.75)
+            if getattr(self, "img_derecha_rect", None):
+                btn_x = self.img_derecha_rect.right + int((width - self.img_derecha_rect.right) * 0.5)
+            self.btn_volver_rect = self.btn_volver.get_rect(center=(btn_x, int(height * 0.85)))
+            
         # Área donde se dibuja el video
         self.video_draw_rect = pygame.Rect(0, 0, width, height)
 
@@ -269,28 +290,35 @@ class Game:
                         self.mute_music()
                 elif self.state == "level1":
                     if self.btn_yes_rect and self.btn_yes_rect.collidepoint(event.pos):
+                        self.game_state.is_sick = False
                         self.start_video("PerroentraCaja.mp4", return_state="level2_sano")
                     elif self.btn_no_rect and self.btn_no_rect.collidepoint(event.pos):
+                        self.game_state.is_sick = True
                         self.start_video("LluviaPerroNoEntra.mp4", return_state="level2_enfermo")
                 elif self.state == "level2_enfermo":
                     if self.btn_yes_rect and self.btn_yes_rect.collidepoint(event.pos):
                         # SI -> ConfioEnMateo -> Level 3
+                        self.game_state.trusts_mateo = True
                         self.start_video("../ELEMENTOS ESCENA 2/Videos/ENFERMO/SI/ConfioEnMateo.mp4", return_state="level3")
                     elif self.btn_no_rect and self.btn_no_rect.collidepoint(event.pos):
                         # NO -> TOMA 2 Toby huye de mateo -> Level 3
+                        self.game_state.trusts_mateo = False
                         self.start_video("../ELEMENTOS ESCENA 2/Videos/ENFERMO/NO/TOMA 2 Toby huye de mateo.mp4", return_state="level3")
 
                 elif self.state == "level2_sano":
                     if self.btn_yes_rect and self.btn_yes_rect.collidepoint(event.pos):
                         # SI -> TOMA 2 Toby se va con Mateo -> Level 3
+                        self.game_state.trusts_mateo = True
                         self.start_video("../ELEMENTOS ESCENA 2/Videos/SANO/SI/TOMA 2 Toby se va con Mateo.mp4", return_state="level3")
                     elif self.btn_no_rect and self.btn_no_rect.collidepoint(event.pos):
                         # NO -> TobySeAsustahuyendo -> Level 3
+                        self.game_state.trusts_mateo = False
                         self.start_video("../ELEMENTOS ESCENA 2/Videos/SANO/NO/TobySeAsustahuyendo.mp4", return_state="level3")
                 
                 elif self.state == "level3":
                     if self.btn_yes_rect and self.btn_yes_rect.collidepoint(event.pos):
                         # SI -> SiEnfrenta -> (Wait 1s) -> 2Enfrenta
+                        self.game_state.faces_fear = True
                         self.start_video_sequence([
                             "../Nivel3/SiEnfrenta.mp4",
                             "WAIT:1000",
@@ -298,6 +326,7 @@ class Game:
                         ], return_state="level4")
                     elif self.btn_no_rect and self.btn_no_rect.collidepoint(event.pos):
                         # NO -> NoEnfrenta -> (Wait 1s) -> 2NoEnfrenta
+                        self.game_state.faces_fear = False
                         self.start_video_sequence([
                             "../Nivel3/NoEnfrenta.mp4",
                             "WAIT:1000",
@@ -306,19 +335,29 @@ class Game:
                 
                 elif self.state == "level4":
                     if getattr(self, "btn_no_lvl4_rect", None) and self.btn_no_lvl4_rect.collidepoint(event.pos):
+                        self.game_state.accepts_new_home = False
                         self.start_video("../Nivel4/VideoDeNo.mp4", return_state="level5_intro")
                     elif getattr(self, "btn_yes_lvl4_rect", None) and self.btn_yes_lvl4_rect.collidepoint(event.pos):
+                        self.game_state.accepts_new_home = True
                         self.start_video("../Nivel4/VideoDeSi.mp4", return_state="level5_intro")
                 
                 elif self.state == "level5_intro":
                     if getattr(self, "btn_sentarse_rect", None) and self.btn_sentarse_rect.collidepoint(event.pos):
+                        self.game_state.grandfather_interaction = "SIT"
                         self.start_video_sequence([
                             "../ELEMENTOS ESCENA 5/VIDEOS/Toby se sienta junto al abuelo y él lo acaricia..mp4",
                             "WAIT:800",
                             "../ELEMENTOS ESCENA 5/VIDEOS/(máxima aceptación)..mp4"
-                        ], return_state="menu")
+                        ], return_state="ending_screen")
                     elif getattr(self, "btn_traer_rect", None) and self.btn_traer_rect.collidepoint(event.pos):
-                        self.start_video("../ELEMENTOS ESCENA 5/VIDEOS/Toby trae la pelota y el abuelo sonríe..mp4", return_state="menu")
+                        self.game_state.grandfather_interaction = "FETCH"
+                        self.start_video("../ELEMENTOS ESCENA 5/VIDEOS/Toby trae la pelota y el abuelo sonríe..mp4", return_state="ending_screen")
+                
+                elif self.state == "ending_screen":
+                    if getattr(self, "btn_volver_rect", None) and self.btn_volver_rect.collidepoint(event.pos):
+                        self.game_state.reset()
+                        self.state = "menu"
+                        self.fade_alpha = 0
                 
                 elif self.state == "playing_video":
                     # Permitir saltar el video con clic
@@ -378,6 +417,9 @@ class Game:
             mouse_pos = pygame.mouse.get_pos()
             self.is_hover_yes = self.btn_sentarse_rect.collidepoint(mouse_pos) if getattr(self, "btn_sentarse_rect", None) else False
             self.is_hover_no = self.btn_traer_rect.collidepoint(mouse_pos) if getattr(self, "btn_traer_rect", None) else False
+            if self.fade_alpha > 0:
+                self.fade_alpha = max(0, self.fade_alpha - int(800 * dt / 1000))
+        elif self.state == "ending_screen":
             if self.fade_alpha > 0:
                 self.fade_alpha = max(0, self.fade_alpha - int(800 * dt / 1000))
         elif self.state == "black_screen_wait":
@@ -574,8 +616,80 @@ class Game:
             # Volume button (top-left)
             vol_img = self.vol_off if self.music_muted else self.vol_on
             self.screen.blit(vol_img, self.vol_pos_video)
+        elif self.state == "ending_screen":
+            self.draw_ending_screen()
 
         pygame.display.flip()
+
+    def draw_ending_screen(self):
+        if getattr(self, "background", None):
+            self.screen.blit(self.background, (0, 0))
+            overlay = pygame.Surface((self.screen.get_width(), self.screen.get_height()), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 170))
+            self.screen.blit(overlay, (0, 0))
+        else:
+            self.screen.fill((40, 40, 50))
+            
+        if getattr(self, "img_derecha", None):
+            self.screen.blit(self.img_derecha, self.img_derecha_rect)
+            
+        try:
+            pygame.font.init()
+            font_title = pygame.font.SysFont("Arial", int(self.screen.get_height() * 0.045), bold=True)
+            font_text = pygame.font.SysFont("Arial", int(self.screen.get_height() * 0.035))
+            
+            text_x = int(self.screen.get_width() * 0.52)
+            if getattr(self, "img_derecha_rect", None):
+                text_x = max(text_x, self.img_derecha_rect.right + int(self.screen.get_width() * 0.03))
+            
+            title_surf = font_title.render("Tabla de Verdad", True, (255, 255, 255))
+            self.screen.blit(title_surf, (text_x, int(self.screen.get_height() * 0.1)))
+            
+            state = self.game_state
+            
+            p_val = "F" if state.is_sick else "V"
+            q_val = "V" if state.trusts_mateo else "F"
+            r_val = "V" if state.faces_fear else "F"
+            s_val = "V" if state.accepts_new_home else "F"
+            t_val = "V" if state.grandfather_interaction == "SIT" else "F"
+            
+            decisions = [
+                ("P (Sano)", p_val),
+                ("Q (Confía en Mateo)", q_val),
+                ("R (Enfrenta Miedo)", r_val),
+                ("S (Acepta Hogar)", s_val),
+                ("T (Sentarse con Abuelo)", t_val)
+            ]
+            
+            start_y = int(self.screen.get_height() * 0.22)
+            line_spacing = int(self.screen.get_height() * 0.07)
+            
+            header_surf = font_text.render("Proposición                             Lógica", True, (200, 200, 200))
+            self.screen.blit(header_surf, (text_x, start_y - line_spacing))
+            
+            for i, (desc, val) in enumerate(decisions):
+                desc_surf = font_text.render(desc, True, (200, 200, 200))
+                val_surf = font_text.render(val, True, (255, 215, 0))
+                self.screen.blit(desc_surf, (text_x, start_y + i * line_spacing))
+                self.screen.blit(val_surf, (text_x + int(self.screen.get_width() * 0.35), start_y + i * line_spacing))
+                
+            logic_expr = f"Expresión: P({p_val}) ^ Q({q_val}) ^ R({r_val}) ^ S({s_val}) ^ T({t_val})"
+            logic_surf = font_text.render(logic_expr, True, (150, 200, 255))
+            self.screen.blit(logic_surf, (text_x, start_y + len(decisions) * line_spacing))
+
+            ending_result = state.calculate_ending()
+            ending_surf = font_title.render(f"Resultado: {ending_result}", True, (100, 255, 100))
+            self.screen.blit(ending_surf, (text_x, start_y + len(decisions) * line_spacing + line_spacing))
+        except Exception as e:
+            pass
+            
+        if getattr(self, "btn_volver", None):
+            self.screen.blit(self.btn_volver, self.btn_volver_rect)
+        vol_img = self.vol_off if self.music_muted else self.vol_on
+        self.screen.blit(vol_img, self.vol_rect)
+        if self.fade_alpha > 0:
+            self.fade_surface.set_alpha(self.fade_alpha)
+            self.screen.blit(self.fade_surface, (0, 0))
 
     def start_video(self, filename, return_state="menu"):
         base_path = os.path.dirname(os.path.abspath(__file__))
